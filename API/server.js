@@ -1,19 +1,34 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
+import cors from "cors";
 
 const prisma = new PrismaClient();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 app.get("/users", async (req, res) => {
-  const users = await prisma.user.findMany();
+  const { name } = req.query;
+  const where = {};
+  if (name) {
+    where.name = { contains: name, mode: "insensitive" };
+  }
+  const users = await prisma.user.findMany({ where });
 
   res.status(200).json(users);
 });
 
 app.post("/users", async (req, res) => {
-  await prisma.user.create({
+  const user = await prisma.user.findUnique({
+    where: { email: req.body.email },
+  });
+
+  if (user) {
+    return res.status(409).send("Email já cadastrado!");
+  }
+
+  const userCreate = await prisma.user.create({
     data: {
       email: req.body.email,
       name: req.body.name,
@@ -21,11 +36,11 @@ app.post("/users", async (req, res) => {
     },
   });
 
-  res.status(201).json(req.body);
+  res.status(201).json(userCreate);
 });
 
 app.put("/users/:id", async (req, res) => {
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: {
       id: req.params.id,
     },
@@ -36,7 +51,7 @@ app.put("/users/:id", async (req, res) => {
     },
   });
 
-  res.status(201).json(req.body);
+  res.status(200).json(user);
 });
 
 app.delete("/users/:id", async (req, res) => {
@@ -45,10 +60,12 @@ app.delete("/users/:id", async (req, res) => {
       id: req.params.id,
     },
   });
-  res.status(200).json({ message: "Usuário deletado com sucesso!" });
+  res.status(204).send();
 });
 
-app.listen(3200);
+app.listen(3200, () => {
+  console.log("Aplicação iniciada na porta (3200)");
+});
 
 // user mongoDB : luizhenrique
 // password: paçoquinha123
