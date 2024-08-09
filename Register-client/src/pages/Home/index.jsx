@@ -20,16 +20,23 @@ function Home() {
   }, []);
 
   async function createUsers() {
-    await api.post("/users", {
+    const response = await api.post("/users", {
       name: inputName.current.value,
-      age: inputAge.current.value,
+      age: parseInt(inputAge.current.value),
       email: inputEmail.current.value,
     });
-    getUsers();
+
+    if (response.status == 201) {
+      setUsers([...users, response.data]);
+    }
   }
 
   async function deleteUsers(id) {
-    await api.delete(`/users${id}`);
+    const response = await api.delete(`/users/${id}`);
+    if (response.status == 204) {
+      setUsers((users) => users.filter((user) => user.id != id));
+    }
+    //filter if user.id is different to id request
   }
 
   return (
